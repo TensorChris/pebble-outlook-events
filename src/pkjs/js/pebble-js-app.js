@@ -125,15 +125,8 @@ function getEvents()
                     attendeesEmailList.push(events[i].attendees[a].emailAddress.address);
                 }
 
-                var timeZoneOffset = new Date().getTimezoneOffset() * 60;
-                if (getWatchInfo().platform == "basalt")
-                    timeZoneOffset = 0;
-
-                var startAsDate = new Date(events[i].start.dateTime);
-                var endAsDate = new Date(events[i].end.dateTime);
-
-                var startTS = parseInt(startAsDate.getTime()/1000) - timeZoneOffset;
-                var endTS = parseInt(endAsDate.getTime()/1000) - timeZoneOffset;
+                var startTS = Math.floor(getMsFromEvent(events[i].start)/1000);
+                var endTS = Math.floor(getMsFromEvent(events[i].end)/1000);
 
                 var eventData = {
                     event_id: i,
@@ -148,7 +141,7 @@ function getEvents()
                 if (timelineEnabled) {
                     var pin = {
                         id: "event-" + startTS + '-' + checksum(events[i].id),
-                        time: startAsDate.toISOString(),
+                        time: new Date(startTS).toISOString(),
                         duration: Math.floor((endTS - startTS)/60),
                         layout: {
                             title: events[i].subject,
@@ -360,4 +353,18 @@ function getWatchInfo()
         platform: "aplite",
       };
     }
+}
+
+function getMsFromEvent(outlookDT) {
+    var dt = new Date(outlookDT.dateTime);
+    var tzOffset = getTimezoneOffsetInMinutes(dt, outlookDT.timeZone);
+    dt.setMinutes(dt.getMinutes() + tzOffset);
+    return dt.getTime();
+}
+
+function getTimezoneOffsetInMinutes(date, timeZone) {
+    var originalDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes());
+    var targetDate = new Date(originalDate.toLocaleString("en-US", { timeZone: timeZone }));
+    var offset = (originalDate.getTime() - targetDate.getTime()) / 60000;
+    return offset;
 }
